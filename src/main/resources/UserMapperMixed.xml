@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.UserMapperMixed">
+    <!--  复杂条件查询（动态 SQL）：与接口 UserMapperMixed 的注解方法共存于同一个 Mapper  -->
+    <select id="findByCondition" parameterType="com.example.entity.User" resultType="com.example.entity.User">
+        SELECT * FROM user
+        <where>
+            <if test="username != null and username != ''">
+                <!-- 课件演示写法（${}）；生产环境建议用 CONCAT('%', #{username}, '%') 防注入 -->
+                AND username LIKE '%${username}%'
+            </if>
+            <if test="email != null and email != ''">
+                AND email = #{email}
+            </if>
+        </where>
+    </select>
+</mapper>
