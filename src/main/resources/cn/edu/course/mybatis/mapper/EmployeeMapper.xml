@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.course.mybatis.mapper.EmployeeMapper">
+    <resultMap id="employeeRow" type="Employee">
+        <id property="id" column="emp_id"/>
+        <result property="name" column="emp_name"/>
+        <result property="gender" column="gender"/>
+        <result property="department" column="dept"/>
+        <result property="jobTitle" column="post"/>
+        <result property="salary" column="salary"/>
+        <result property="hireDate" column="hire_date"/>
+        <result property="active" column="status"/>
+    </resultMap>
+
+    <sql id="employeeColumns">
+        emp_id, emp_name, gender, dept, post, salary, hire_date, status
+    </sql>
+
+    <select id="findAll" resultMap="employeeRow">
+        SELECT <include refid="employeeColumns"/>
+        FROM emp
+        ORDER BY emp_id
+    </select>
+
+    <select id="findById" parameterType="int" resultMap="employeeRow">
+        SELECT <include refid="employeeColumns"/>
+        FROM emp
+        WHERE emp_id = #{id}
+    </select>
+
+    <insert id="save" parameterType="Employee" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO emp (emp_name, gender, dept, post, salary, hire_date, status)
+        VALUES (#{name}, #{gender}, #{department}, #{jobTitle}, #{salary}, #{hireDate}, #{active})
+    </insert>
+
+    <update id="changeProfile" parameterType="Employee">
+        UPDATE emp
+        SET emp_name = #{name},
+            gender = #{gender},
+            dept = #{department},
+            post = #{jobTitle},
+            salary = #{salary},
+            hire_date = #{hireDate},
+            status = #{active}
+        WHERE emp_id = #{id}
+    </update>
+
+    <delete id="removeById" parameterType="int">
+        DELETE FROM emp
+        WHERE emp_id = #{id}
+    </delete>
+</mapper>

@@ -1,0 +1,8 @@
+target/
+*.iml
+.idea/
+.idea/workspace.xml
+.idea/shelf/
+.idea/tasks.xml
+*.log
+*.docx
