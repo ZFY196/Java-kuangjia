@@ -51,4 +51,78 @@
         DELETE FROM emp
         WHERE emp_id = #{id}
     </delete>
+
+    <select id="search" parameterType="Employee" resultMap="employeeRow">
+        SELECT <include refid="employeeColumns"/>
+        FROM emp
+        <trim prefix="WHERE" prefixOverrides="AND |OR ">
+            <if test="name != null and name != ''">
+                AND emp_name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="gender != null and gender != ''">
+                AND gender = #{gender}
+            </if>
+            <if test="department != null and department != ''">
+                AND dept = #{department}
+            </if>
+            <if test="jobTitle != null and jobTitle != ''">
+                AND post LIKE CONCAT('%', #{jobTitle}, '%')
+            </if>
+            <if test="active != null">
+                AND status = #{active}
+            </if>
+        </trim>
+        ORDER BY emp_id
+    </select>
+
+    <update id="patch" parameterType="Employee">
+        UPDATE emp
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null">emp_name = #{name},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="department != null">dept = #{department},</if>
+            <if test="jobTitle != null">post = #{jobTitle},</if>
+            <if test="salary != null">salary = #{salary},</if>
+            <if test="hireDate != null">hire_date = #{hireDate},</if>
+            <if test="active != null">status = #{active},</if>
+        </trim>
+        WHERE emp_id = #{id}
+    </update>
+
+    <delete id="removeMany">
+        DELETE FROM emp
+        WHERE emp_id IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+            #{key}
+        </foreach>
+    </delete>
+
+    <insert id="addMany" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO emp
+        (emp_name, gender, dept, post, salary, hire_date, status)
+        VALUES
+        <foreach collection="roster" item="item" separator=",">
+            (#{item.name}, #{item.gender}, #{item.department}, #{item.jobTitle},
+             #{item.salary}, #{item.hireDate}, #{item.active})
+        </foreach>
+    </insert>
+
+    <select id="chooseByNameOrDepartment" parameterType="Employee" resultMap="employeeRow">
+        SELECT <include refid="employeeColumns"/>
+        FROM emp
+        <where>
+            <choose>
+                <when test="name != null and name != ''">
+                    emp_name = #{name}
+                </when>
+                <when test="department != null and department != ''">
+                    dept = #{department}
+                </when>
+                <otherwise>
+                    status = 1
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY emp_id
+    </select>
 </mapper>

@@ -1,16 +1,28 @@
 package cn.edu.course.mybatis.domain;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.util.Date;
 
+@TableName("emp")
 public class Employee {
+    @TableId(value = "emp_id", type = IdType.AUTO)
     private Integer id;
+    @TableField("emp_name")
     private String name;
     private String gender;
+    @TableField("dept")
     private String department;
+    @TableField("post")
     private String jobTitle;
     private BigDecimal salary;
+    @TableField("hire_date")
     private Date hireDate;
+    @TableField("status")
     private Integer active;
 
     public Integer getId() {

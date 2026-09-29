@@ -22,6 +22,18 @@ final class EmployeeSamples {
         return employee;
     }
 
+    static Employee newFinanceAnalyst(String name) {
+        Employee employee = new Employee();
+        employee.setName(name);
+        employee.setGender("女");
+        employee.setDepartment("财务共享中心");
+        employee.setJobTitle("结算分析师");
+        employee.setSalary(new BigDecimal("9650.00"));
+        employee.setHireDate(dateOf(2025, Calendar.MARCH, 18));
+        employee.setActive(1);
+        return employee;
+    }
+
     static Date dateOf(int year, int month, int day) {
         Calendar calendar = Calendar.getInstance();
         calendar.clear();
