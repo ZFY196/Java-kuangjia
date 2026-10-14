@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.course.mybatis.mapper.EmpMapper">
+    <resultMap type="staffRecord" id="staffRow">
+        <id column="emp_id" property="id"/>
+        <result column="status" property="activeFlag"/>
+        <result column="salary" property="monthlyPay"/>
+        <result column="hire_date" property="joinedOn"/>
+        <result column="post" property="position"/>
+        <result column="dept" property="department"/>
+        <result column="gender" property="sex"/>
+        <result column="emp_name" property="name"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+        <result column="version" property="version"/>
+    </resultMap>
+
+    <sql id="rosterProjection">
+        e.emp_id, e.status, e.salary, e.hire_date, e.post, e.dept, e.gender, e.emp_name,
+        e.create_time, e.update_time, e.deleted, e.version
+    </sql>
+    <sql id="rosterSource">
+        SELECT <include refid="rosterProjection"/> FROM emp e
+    </sql>
+    <sql id="writeColumns">
+        emp_name, dept, post, gender, status, hire_date, salary
+    </sql>
+
+    <select resultMap="staffRow" id="listRoster">
+        <include refid="rosterSource"/> WHERE e.deleted = 0 ORDER BY e.emp_id
+    </select>
+    <select resultMap="staffRow" id="findRecord">
+        <include refid="rosterSource"/> WHERE e.emp_id = #{key} AND e.deleted = 0
+    </select>
+    <insert keyColumn="emp_id" keyProperty="record.id" useGeneratedKeys="true" id="createRecord">
+        INSERT INTO emp (<include refid="writeColumns"/>)
+        VALUES (#{record.name}, #{record.department}, #{record.position}, #{record.sex},
+                #{record.activeFlag}, #{record.joinedOn}, #{record.monthlyPay})
+    </insert>
+    <update id="removeRecord">
+        UPDATE emp SET deleted = 1, update_time = CURRENT_TIMESTAMP(6), version = version + 1
+        WHERE emp_id = #{key} AND deleted = 0
+    </update>
+    <update id="replaceProfile">
+        UPDATE emp SET status = #{record.activeFlag}, salary = #{record.monthlyPay},
+                       post = #{record.position}, dept = #{record.department},
+                       gender = #{record.sex}, emp_name = #{record.name},
+                       update_time = CURRENT_TIMESTAMP(6), version = version + 1
+        WHERE emp_id = #{record.id} AND deleted = 0
+        <if test="record.version != null">AND version = #{record.version}</if>
+    </update>
+
+    <!-- 同一条件片段供 where 与 trim 两种写法使用。 -->
+    <sql id="optionalRestrictions">
+        AND e.deleted = 0
+        <if test="criteria != null">
+            <if test="criteria.department != null">AND e.dept = #{criteria.department}</if>
+            <if test="criteria.activeFlag != null">AND e.status = #{criteria.activeFlag}</if>
+            <if test="criteria.nameText != null">
+                <bind value="'%' + criteria.nameText + '%'" name="namePattern"/>
+                AND e.emp_name LIKE #{namePattern}
+            </if>
+            <if test="criteria.sex != null">AND e.gender = #{criteria.sex}</if>
+            <if test="criteria.minimumPay != null">AND e.salary &gt;= #{criteria.minimumPay}</if>
+        </if>
+    </sql>
+    <select resultMap="staffRow" id="searchRoster">
+        <include refid="rosterSource"/>
+        <where><include refid="optionalRestrictions"/></where>
+        ORDER BY e.emp_id
+    </select>
+    <select resultMap="staffRow" id="searchRosterWithTrim">
+        <include refid="rosterSource"/>
+        <trim prefixOverrides="AND |OR " prefix="WHERE">
+            <include refid="optionalRestrictions"/>
+        </trim>
+        ORDER BY e.emp_id
+    </select>
+
+    <update id="patchProfile">
+        UPDATE emp
+        <choose>
+            <when test="change != null and change.id != null and change.hasProfileChanges()">
+                <set>
+                    <if test="change.activeFlag != null">status = #{change.activeFlag},</if>
+                    <if test="change.monthlyPay != null">salary = #{change.monthlyPay},</if>
+                    <if test="change.position != null">post = #{change.position},</if>
+                    <if test="change.department != null">dept = #{change.department},</if>
+                    <if test="change.name != null">emp_name = #{change.name},</if>
+                    update_time = CURRENT_TIMESTAMP(6), version = version + 1,
+                </set>
+                WHERE emp_id = #{change.id} AND deleted = 0
+                <if test="change.version != null">AND version = #{change.version}</if>
+            </when>
+            <otherwise>SET emp_id = emp_id WHERE 1 = 0</otherwise>
+        </choose>
+    </update>
+    <update id="removeRoster">
+        UPDATE emp SET deleted = 1, update_time = CURRENT_TIMESTAMP(6), version = version + 1
+        <choose>
+            <when test="employeeKeys != null and !employeeKeys.isEmpty()">
+                WHERE deleted = 0 AND emp_id IN
+                <foreach separator="," close=")" open="(" item="employeeKey" collection="employeeKeys">
+                    #{employeeKey}
+                </foreach>
+            </when>
+            <otherwise>WHERE 1 = 0</otherwise>
+        </choose>
+    </update>
+    <insert keyProperty="newcomers.id" keyColumn="emp_id" useGeneratedKeys="true" id="addRoster">
+        INSERT INTO emp (<include refid="writeColumns"/>)
+        <choose>
+            <when test="newcomers != null and !newcomers.isEmpty()">
+                VALUES
+                <foreach item="candidate" separator="," collection="newcomers">
+                    (#{candidate.name}, #{candidate.department}, #{candidate.position}, #{candidate.sex},
+                     #{candidate.activeFlag}, #{candidate.joinedOn}, #{candidate.monthlyPay})
+                </foreach>
+            </when>
+            <otherwise>
+                SELECT emp_name, dept, post, gender, status, hire_date, salary FROM emp WHERE 1 = 0
+            </otherwise>
+        </choose>
+    </insert>
+    <select resultMap="staffRow" id="findPreferred">
+        <include refid="rosterSource"/>
+        <where>
+            e.deleted = 0 AND
+            <choose>
+                <when test="criteria != null and criteria.nameText != null">e.emp_name = #{criteria.nameText}</when>
+                <when test="criteria != null and criteria.department != null">e.dept = #{criteria.department}</when>
+                <otherwise>1 = 1</otherwise>
+            </choose>
+        </where>
+        ORDER BY e.emp_id
+    </select>
+</mapper>

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.course.mybatis.mapper.MultiTableMapper">
+
+    <!-- 员工基础映射：多张关联 resultMap 复用，避免重复书写字段 -->
+    <resultMap id="empBase" type="staffRecord">
+        <id column="emp_id" property="id"/>
+        <result column="emp_name" property="name"/>
+        <result column="gender" property="sex"/>
+        <result column="dept" property="department"/>
+        <result column="post" property="position"/>
+        <result column="salary" property="monthlyPay"/>
+        <result column="hire_date" property="joinedOn"/>
+        <result column="status" property="activeFlag"/>
+        <result column="emp_create_time" property="createTime"/>
+        <result column="emp_update_time" property="updateTime"/>
+        <result column="emp_deleted" property="deleted"/>
+        <result column="emp_version" property="version"/>
+    </resultMap>
+
+    <sql id="empJoinColumns">
+        e.emp_id, e.emp_name, e.gender, e.dept, e.post, e.salary, e.hire_date, e.status,
+        e.create_time AS emp_create_time, e.update_time AS emp_update_time,
+        e.deleted AS emp_deleted, e.version AS emp_version
+    </sql>
+
+    <!-- ============ 一对一：员工 ←→ 身份证（association 联合查询） ============
+         一条 SQL LEFT JOIN 同时取出员工与证件，
+         证件列与员工列重名（emp_id）时须起别名区分。 -->
+    <resultMap id="empWithIdCardMap" type="staffRecord" extends="empBase">
+        <association property="idCard" javaType="idCardRecord" notNullColumn="idcard_id">
+            <id column="idcard_id" property="idcardId"/>
+            <result column="idcard_emp_id" property="empId"/>
+            <result column="card_no" property="cardNo"/>
+            <result column="expire_date" property="expireDate"/>
+        </association>
+    </resultMap>
+    <select id="findEmpWithIdCard" resultMap="empWithIdCardMap">
+        SELECT <include refid="empJoinColumns"/>,
+               i.idcard_id, i.emp_id AS idcard_emp_id, i.card_no, i.expire_date
+        FROM emp e
+        LEFT JOIN idcard i ON i.emp_id = e.emp_id
+        WHERE e.emp_id = #{empId} AND e.deleted = 0
+    </select>
+
+    <!-- 多对一：多名员工通过 dept_id 关联到同一个部门。 -->
+    <resultMap id="empWithDeptMap" type="staffRecord" extends="empBase">
+        <association property="deptInfo" javaType="departmentRecord" notNullColumn="deptno">
+            <id column="deptno" property="deptno"/>
+            <result column="dname" property="dname"/>
+            <result column="loc" property="loc"/>
+            <result column="deleted" property="deleted"/>
+        </association>
+    </resultMap>
+    <select id="findEmpWithDept" resultMap="empWithDeptMap">
+        SELECT <include refid="empJoinColumns"/>, d.deptno, d.dname, d.loc, d.deleted
+        FROM emp e
+        LEFT JOIN dept d ON d.deptno = e.dept_id AND d.deleted = 0
+        WHERE e.emp_id = #{empId} AND e.deleted = 0
+    </select>
+
+    <!-- ============ 一对多：部门 ← 员工列表（collection 联合查询） ============
+         dept 一行与多条 emp 行连接，MyBatis 依据 <id> 列自动去重聚合，
+         把多行员工归入同一部门的 emps 集合。 -->
+    <resultMap id="deptWithEmpsMap" type="departmentRecord">
+        <id column="deptno" property="deptno"/>
+        <result column="dname" property="dname"/>
+        <result column="loc" property="loc"/>
+        <result column="deleted" property="deleted"/>
+        <collection property="emps" resultMap="empBase" notNullColumn="emp_id"/>
+    </resultMap>
+    <select id="findDeptWithEmps" resultMap="deptWithEmpsMap">
+        SELECT d.deptno, d.dname, d.loc, d.deleted,
+               <include refid="empJoinColumns"/>
+        FROM dept d
+        LEFT JOIN emp e ON e.dept_id = d.deptno AND e.deleted = 0
+        WHERE d.deptno = #{deptno} AND d.deleted = 0
+        ORDER BY e.emp_id
+    </select>
+
+    <!-- ============ 多对多（方向一）：项目 → 员工 ============
+         三表连接：project ← emp_project → emp，
+         中间表提供两侧外键，emp_project 无独立实体。 -->
+    <resultMap id="projectWithEmpsMap" type="projectRecord">
+        <id column="project_id" property="projectId"/>
+        <result column="project_name" property="projectName"/>
+        <result column="start_date" property="startDate"/>
+        <collection property="emps" resultMap="empBase" notNullColumn="emp_id"/>
+    </resultMap>
+    <select id="findProjectWithEmps" resultMap="projectWithEmpsMap">
+        SELECT p.project_id, p.project_name, p.start_date,
+               <include refid="empJoinColumns"/>
+        FROM project p
+        LEFT JOIN emp_project ep ON ep.project_id = p.project_id
+        LEFT JOIN emp e ON e.emp_id = ep.emp_id AND e.deleted = 0
+        WHERE p.project_id = #{projectId}
+        ORDER BY e.emp_id
+    </select>
+
+    <!-- ============ 多对多（方向二）：员工 → 项目 ============
+         同一组表的反向查询：emp ← emp_project → project，
+         子列均不重名，collection 可直接内联书写。 -->
+    <resultMap id="empWithProjectsMap" type="staffRecord" extends="empBase">
+        <collection property="projects" ofType="projectRecord" notNullColumn="project_id">
+            <id column="project_id" property="projectId"/>
+            <result column="project_name" property="projectName"/>
+            <result column="start_date" property="startDate"/>
+        </collection>
+    </resultMap>
+    <select id="findEmpWithProjects" resultMap="empWithProjectsMap">
+        SELECT <include refid="empJoinColumns"/>,
+               p.project_id, p.project_name, p.start_date
+        FROM emp e
+        LEFT JOIN emp_project ep ON ep.emp_id = e.emp_id
+        LEFT JOIN project p ON p.project_id = ep.project_id
+        WHERE e.emp_id = #{empId} AND e.deleted = 0
+        ORDER BY p.project_id
+    </select>
+</mapper>

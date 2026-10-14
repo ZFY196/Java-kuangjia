@@ -1,29 +1,29 @@
 package cn.edu.course.mybatis.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import cn.edu.course.mybatis.domain.Employee;
+import cn.edu.course.mybatis.entity.Emp;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-public interface EmployeeMapper extends BaseMapper<Employee> {
-    List<Employee> findAll();
+public interface EmployeeMapper extends BaseMapper<Emp> {
+    List<Emp> findAll();
 
-    Employee findById(Integer id);
+    Emp findById(Integer id);
 
-    int save(Employee employee);
+    int save(Emp employee);
 
-    int changeProfile(Employee employee);
+    int changeProfile(Emp employee);
 
     int removeById(Integer id);
 
-    List<Employee> search(Employee filter);
+    List<Emp> search(Emp filter);
 
-    int patch(Employee employee);
+    int patch(Emp employee);
 
     int removeMany(@Param("keys") List<Integer> ids);
 
-    int addMany(@Param("roster") List<Employee> employees);
+    int addMany(@Param("roster") List<Emp> employees);
 
-    List<Employee> chooseByNameOrDepartment(Employee query);
+    List<Emp> chooseByNameOrDepartment(Emp query);
 }
