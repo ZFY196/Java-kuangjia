@@ -1,6 +1,6 @@
 package cn.edu.course.mybatis.util;
 
-import cn.edu.course.mybatis.mapper.EmpMapper;
+import cn.edu.course.mybatis.mapper.BookMapper;
 import cn.edu.course.mybatis.config.MyMetaObjectHandler;
 import cn.edu.course.mybatis.config.MybatisPlusConfig;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -60,15 +60,15 @@ public final class MyBatisUtil {
         return PlusEngine.INSTANCE;
     }
 
-    public static <T> T inspect(Function<EmpMapper, T> work) {
+    public static <T> T inspect(Function<BookMapper, T> work) {
         try (SqlSession session = openSession()) {
-            return work.apply(session.getMapper(EmpMapper.class));
+            return work.apply(session.getMapper(BookMapper.class));
         }
     }
 
-    public static <T> T inspectClassic(Function<EmpMapper, T> work) {
+    public static <T> T inspectClassic(Function<BookMapper, T> work) {
         try (SqlSession session = openClassicSession()) {
-            return work.apply(session.getMapper(EmpMapper.class));
+            return work.apply(session.getMapper(BookMapper.class));
         }
     }
 }

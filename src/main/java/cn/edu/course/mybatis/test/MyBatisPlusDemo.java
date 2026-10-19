@@ -1,23 +1,23 @@
 package cn.edu.course.mybatis.test;
 
-import cn.edu.course.mybatis.entity.Emp;
-import cn.edu.course.mybatis.entity.StaffSearch;
-import cn.edu.course.mybatis.util.EmpQueryWrappers;
+import cn.edu.course.mybatis.entity.Book;
+import cn.edu.course.mybatis.entity.BookSearch;
+import cn.edu.course.mybatis.util.BookQueryWrappers;
 import cn.edu.course.mybatis.util.MyBatisUtil;
-import cn.edu.course.mybatis.util.RosterConsole;
+import cn.edu.course.mybatis.util.BookConsole;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 public class MyBatisPlusDemo {
     public static void main(String[] arguments) {
-        StaffSearch request = StaffSearch.activeStaff();
+        BookSearch request = BookSearch.availableBooks();
         if (arguments.length > 0) {
-            request.setNameText(arguments[0]);
+            request.setTitleText(arguments[0]);
         }
         if (arguments.length > 1) {
-            request.setSex(arguments[1]);
+            request.setBinding(arguments[1]);
         }
         if (arguments.length > 2) {
-            request.setMinimumPay(new java.math.BigDecimal(arguments[2]));
+            request.setMinimumPrice(new java.math.BigDecimal(arguments[2]));
         }
         long pageNumber = arguments.length > 3 ? Long.parseLong(arguments[3]) : 1;
         long pageCapacity = arguments.length > 4 ? Long.parseLong(arguments[4]) : 3;
@@ -26,15 +26,15 @@ public class MyBatisPlusDemo {
         }
 
         MyBatisUtil.inspect(repository -> {
-            RosterConsole.show("列名条件构造器", repository.selectList(EmpQueryWrappers.byColumns(request)));
-            RosterConsole.show("属性条件构造器", repository.selectList(EmpQueryWrappers.byProperties(request)));
-            Page<Emp> slice = repository.selectPage(new Page<>(pageNumber, pageCapacity),
-                    EmpQueryWrappers.byProperties(request));
+            BookConsole.show("列名条件构造器", repository.selectList(BookQueryWrappers.byColumns(request)));
+            BookConsole.show("属性条件构造器", repository.selectList(BookQueryWrappers.byProperties(request)));
+            Page<Book> slice = repository.selectPage(new Page<>(pageNumber, pageCapacity),
+                    BookQueryWrappers.byProperties(request));
             System.out.printf("%n分页统计：%d 条记录，%d 页；当前第 %d 页，每页 %d 条%n",
                     slice.getTotal(), slice.getPages(), slice.getCurrent(), slice.getSize());
-            RosterConsole.show("本页员工", slice.getRecords());
+            BookConsole.show("本页图书", slice.getRecords());
             return null;
         });
-        EmpPlusFeaturesDemo.main(new String[0]);
+        BookPlusFeaturesDemo.main(new String[0]);
     }
 }

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import org.apache.ibatis.reflection.MetaObject;
 import java.time.LocalDateTime;
 
-/** MP 员工新增/更新填充，XML 写入的时间由 SQL 与数据库默认值维护。 */
+/** MP 图书新增/更新填充，XML 写入的时间由 SQL 与数据库默认值维护。 */
 public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {

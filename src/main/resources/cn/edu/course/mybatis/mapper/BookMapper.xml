@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.course.mybatis.mapper.BookMapper">
+    <resultMap type="bookRecord" id="bookRow">
+        <id column="book_id" property="id"/>
+        <result column="status" property="saleStatus"/>
+        <result column="price" property="price"/>
+        <result column="publish_date" property="publishedOn"/>
+        <result column="category" property="category"/>
+        <result column="publisher" property="publisher"/>
+        <result column="publisher_id" property="publisherId"/>
+        <result column="binding" property="binding"/>
+        <result column="book_title" property="title"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+        <result column="version" property="version"/>
+    </resultMap>
+
+    <sql id="bookProjection">
+        e.book_id, e.status, e.price, e.publish_date, e.category, e.publisher, e.publisher_id, e.binding, e.book_title,
+        e.create_time, e.update_time, e.deleted, e.version
+    </sql>
+    <sql id="bookSource">
+        SELECT <include refid="bookProjection"/> FROM book e
+    </sql>
+    <sql id="writeColumns">
+        book_title, publisher, category, binding, status, publish_date, price, publisher_id
+    </sql>
+
+    <select resultMap="bookRow" id="listBooks">
+        <include refid="bookSource"/> WHERE e.deleted = 0 ORDER BY e.book_id
+    </select>
+    <select resultMap="bookRow" id="findRecord">
+        <include refid="bookSource"/> WHERE e.book_id = #{key} AND e.deleted = 0
+    </select>
+    <insert keyColumn="book_id" keyProperty="record.id" useGeneratedKeys="true" id="createRecord">
+        INSERT INTO book (<include refid="writeColumns"/>)
+        VALUES (#{record.title}, #{record.publisher}, #{record.category}, #{record.binding},
+                #{record.saleStatus}, #{record.publishedOn}, #{record.price}, #{record.publisherId})
+    </insert>
+    <update id="removeRecord">
+        UPDATE book SET deleted = 1, update_time = CURRENT_TIMESTAMP(6), version = version + 1
+        WHERE book_id = #{key} AND deleted = 0
+    </update>
+    <update id="replaceDetails">
+        UPDATE book SET status = #{record.saleStatus}, price = #{record.price},
+                       category = #{record.category}, publisher = #{record.publisher},
+                       binding = #{record.binding}, book_title = #{record.title},
+                       update_time = CURRENT_TIMESTAMP(6), version = version + 1
+        <if test="record.publisherId != null">, publisher_id = #{record.publisherId}</if>
+        WHERE book_id = #{record.id} AND deleted = 0
+        <if test="record.version != null">AND version = #{record.version}</if>
+    </update>
+
+    <!-- 同一条件片段供 where 与 trim 两种写法使用。 -->
+    <sql id="optionalRestrictions">
+        AND e.deleted = 0
+        <if test="criteria != null">
+            <if test="criteria.publisher != null">AND e.publisher = #{criteria.publisher}</if>
+            <if test="criteria.saleStatus != null">AND e.status = #{criteria.saleStatus}</if>
+            <if test="criteria.titleText != null">
+                <bind value="'%' + criteria.titleText + '%'" name="titlePattern"/>
+                AND e.book_title LIKE #{titlePattern}
+            </if>
+            <if test="criteria.binding != null">AND e.binding = #{criteria.binding}</if>
+            <if test="criteria.minimumPrice != null">AND e.price &gt;= #{criteria.minimumPrice}</if>
+        </if>
+    </sql>
+    <select resultMap="bookRow" id="searchBooks">
+        <include refid="bookSource"/>
+        <where><include refid="optionalRestrictions"/></where>
+        ORDER BY e.book_id
+    </select>
+    <select resultMap="bookRow" id="searchBooksWithTrim">
+        <include refid="bookSource"/>
+        <trim prefixOverrides="AND |OR " prefix="WHERE">
+            <include refid="optionalRestrictions"/>
+        </trim>
+        ORDER BY e.book_id
+    </select>
+
+    <update id="patchDetails">
+        UPDATE book
+        <choose>
+            <when test="change != null and change.id != null and change.hasDetailChanges()">
+                <set>
+                    <if test="change.saleStatus != null">status = #{change.saleStatus},</if>
+                    <if test="change.price != null">price = #{change.price},</if>
+                    <if test="change.category != null">category = #{change.category},</if>
+                    <if test="change.publisher != null">publisher = #{change.publisher},</if>
+                    <if test="change.publisherId != null">publisher_id = #{change.publisherId},</if>
+                    <if test="change.title != null">book_title = #{change.title},</if>
+                    update_time = CURRENT_TIMESTAMP(6), version = version + 1,
+                </set>
+                WHERE book_id = #{change.id} AND deleted = 0
+                <if test="change.version != null">AND version = #{change.version}</if>
+            </when>
+            <otherwise>SET book_id = book_id WHERE 1 = 0</otherwise>
+        </choose>
+    </update>
+    <update id="removeBooks">
+        UPDATE book SET deleted = 1, update_time = CURRENT_TIMESTAMP(6), version = version + 1
+        <choose>
+            <when test="bookKeys != null and !bookKeys.isEmpty()">
+                WHERE deleted = 0 AND book_id IN
+                <foreach separator="," close=")" open="(" item="bookKey" collection="bookKeys">
+                    #{bookKey}
+                </foreach>
+            </when>
+            <otherwise>WHERE 1 = 0</otherwise>
+        </choose>
+    </update>
+    <insert keyProperty="newcomers.id" keyColumn="book_id" useGeneratedKeys="true" id="addBooks">
+        INSERT INTO book (<include refid="writeColumns"/>)
+        <choose>
+            <when test="newcomers != null and !newcomers.isEmpty()">
+                VALUES
+                <foreach item="candidate" separator="," collection="newcomers">
+                    (#{candidate.title}, #{candidate.publisher}, #{candidate.category}, #{candidate.binding},
+                     #{candidate.saleStatus}, #{candidate.publishedOn}, #{candidate.price}, #{candidate.publisherId})
+                </foreach>
+            </when>
+            <otherwise>
+                SELECT book_title, publisher, category, binding, status, publish_date, price, publisher_id FROM book WHERE 1 = 0
+            </otherwise>
+        </choose>
+    </insert>
+    <select resultMap="bookRow" id="findPreferred">
+        <include refid="bookSource"/>
+        <where>
+            e.deleted = 0 AND
+            <choose>
+                <when test="criteria != null and criteria.titleText != null">e.book_title = #{criteria.titleText}</when>
+                <when test="criteria != null and criteria.publisher != null">e.publisher = #{criteria.publisher}</when>
+                <otherwise>1 = 1</otherwise>
+            </choose>
+        </where>
+        ORDER BY e.book_id
+    </select>
+</mapper>

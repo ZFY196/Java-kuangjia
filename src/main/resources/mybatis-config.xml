@@ -11,10 +11,10 @@
     </settings>
 
     <typeAliases>
-        <typeAlias type="cn.edu.course.mybatis.entity.Emp" alias="staffRecord"/>
-        <typeAlias type="cn.edu.course.mybatis.entity.Dept" alias="departmentRecord"/>
-        <typeAlias type="cn.edu.course.mybatis.entity.IdCard" alias="idCardRecord"/>
-        <typeAlias type="cn.edu.course.mybatis.entity.Project" alias="projectRecord"/>
+        <typeAlias type="cn.edu.course.mybatis.entity.Book" alias="bookRecord"/>
+        <typeAlias type="cn.edu.course.mybatis.entity.Publisher" alias="publisherRecord"/>
+        <typeAlias type="cn.edu.course.mybatis.entity.BookDetail" alias="bookDetailRecord"/>
+        <typeAlias type="cn.edu.course.mybatis.entity.Author" alias="authorRecord"/>
     </typeAliases>
 
     <!-- MyBatisUtil 的 MP 工厂在 build 前注册分页、乐观锁和自动填充。 -->

@@ -5,4 +5,5 @@ target/
 .idea/shelf/
 .idea/tasks.xml
 *.log
+.local-backups/
 *.docx
